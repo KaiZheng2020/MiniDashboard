@@ -1,4 +1,5 @@
 using MiniDashboard.Api.Models.Common;
+using MiniDashboard.Api.Middleware;
 using MiniDashboard.Api.Repository;
 using MiniDashboard.Api.Service;
 using Microsoft.AspNetCore.Mvc;
@@ -51,6 +52,9 @@ services.Configure<ApiBehaviorOptions>(options =>
 });
 
 var app = builder.Build();
+
+// Global exception handler middleware (should be first in the pipeline)
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 // Development middleware
 if (app.Environment.IsDevelopment())
