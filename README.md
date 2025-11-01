@@ -15,6 +15,7 @@ MiniDashboard/
 │   │   └── ItemRepository.cs        # Repository implementations
 │   ├── Service/                     # Business Logic Layer
 │   │   └── ItemService.cs           # Service implementations
+│   ├── Migrations/                  # EF Core Migrations
 │   └── Controllers/                 # API Controllers
 └── MiniDashboard.Tests/             # Unit Tests
 ```
@@ -75,7 +76,7 @@ dotnet run
 
 ## Database
 
-The application uses SQLite database. The database file `MiniDashboard.db` will be created automatically when the application runs for the first time (using `EnsureCreated()`).
+The application uses SQLite database with Entity Framework Core Code First approach and Migrations. You need to manually apply migrations to create or update the database.
 
 Connection string is configured in `appsettings.json`:
 ```json
@@ -85,6 +86,51 @@ Connection string is configured in `appsettings.json`:
   }
 }
 ```
+
+### Database Migrations
+
+This project uses EF Core Migrations to manage database schema changes. When you modify entity models, you need to create and apply migrations manually.
+
+**Initial Setup (First Time):**
+
+1. Apply all pending migrations to create the database:
+```bash
+cd MiniDashboard.Api
+dotnet ef database update --context MiniDashboardDbContext
+```
+
+**Creating a new migration:**
+
+When you modify entity models, create a new migration:
+```bash
+cd MiniDashboard.Api
+dotnet ef migrations add <MigrationName> --context MiniDashboardDbContext
+```
+
+Example:
+```bash
+dotnet ef migrations add AddPriceToItem
+```
+
+**Applying migrations:**
+
+After creating a migration, manually apply it to update the database:
+```bash
+cd MiniDashboard.Api
+dotnet ef database update --context MiniDashboardDbContext
+```
+
+**Other useful migration commands:**
+- List all migrations: `dotnet ef migrations list`
+- Revert to a specific migration: `dotnet ef database update <PreviousMigrationName>`
+- Remove the last migration (if not applied): `dotnet ef migrations remove`
+
+**Note:** Make sure you have the EF Core tools installed. If not, install them with:
+```bash
+dotnet tool install --global dotnet-ef
+```
+
+**Important:** The application does NOT automatically apply migrations. You must manually run `dotnet ef database update` after creating or modifying migrations.
 
 ## Running Tests
 

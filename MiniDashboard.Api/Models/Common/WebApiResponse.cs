@@ -24,12 +24,17 @@ public class WebApiResponse<T>
 
     public static WebApiResponse<T> Ok(T? data)
     {
-        int total = ShouldIncludeTotal(data) ? GetTotalFromData(data) : 0;
-
-        if (data == null || IsEmptyCollection(data))
+        if (data == null)
         {
             return new WebApiResponse<T>(true, "Success", default, 0);
         }
+
+        if (IsEmptyCollection(data))
+        {
+            return new WebApiResponse<T>(true, "Success", default, 0);
+        }
+
+        int total = ShouldIncludeTotal(data) ? GetTotalFromData(data) : 1;
 
         return new WebApiResponse<T>(true, "Success", data, total);
     }
