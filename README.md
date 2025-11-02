@@ -1,12 +1,12 @@
-# MiniDashboard API
+# MiniDashboard
 
-A simple CRUD API application built with ASP.NET Core 8.0, following clean architecture principles with layered design.
+A WPF desktop application with a Web API backend, demonstrating clean MVVM architecture and layered design principles.
 
 ## Project Structure
 
 ```
 MiniDashboard/
-├── MiniDashboard.Api/              # Main API Project
+├── MiniDashboard.Api/              # ASP.NET Core Web API Backend
 │   ├── Models/                      # Domain Models Layer
 │   │   ├── Entities/                # Entity models
 │   │   ├── DTOs/                    # Data Transfer Objects
@@ -17,26 +17,56 @@ MiniDashboard/
 │   │   └── ItemService.cs           # Service implementations
 │   ├── Migrations/                  # EF Core Migrations
 │   └── Controllers/                 # API Controllers
+├── MiniDashboard.App/              # WPF Desktop Application
+│   ├── Models/                      # View Models
+│   ├── ViewModels/                  # MVVM ViewModels
+│   ├── Views/                       # WPF Views (XAML)
+│   ├── Services/                    # API Client Services
+│   ├── Commands/                    # Command Implementations
+│   └── Converters/                 # Value Converters
 └── MiniDashboard.Tests/             # Unit Tests
 ```
 
 ## Architecture
 
-The project follows a clean layered architecture, with all code organized within the MiniDashboard.Api project using different namespaces and folders:
+### Backend (API)
+The API follows a clean layered architecture:
 
 - **Models Layer** (`MiniDashboard.Api.Models`): Contains entities, DTOs, and common models
 - **Repository Layer** (`MiniDashboard.Api.Repository`): Data access using Entity Framework Core with SQLite
 - **Service Layer** (`MiniDashboard.Api.Service`): Business logic and orchestration
 - **API Layer** (`MiniDashboard.Api.Controllers`): Controllers and API endpoints
-- **Tests Layer**: Unit tests for services and controllers
+
+### Frontend (WPF Application)
+The WPF application strictly follows the MVVM pattern:
+
+- **Models** (`MiniDashboard.App.Models`): View models with INotifyPropertyChanged
+- **ViewModels** (`MiniDashboard.App.ViewModels`): Business logic and state management (no code-behind)
+- **Views** (`MiniDashboard.App.Views`): XAML-only views with data binding
+- **Services** (`MiniDashboard.App.Services`): HTTP client services for API communication
+- **Commands** (`MiniDashboard.App.Commands`): RelayCommand and AsyncRelayCommand implementations
+- **Converters** (`MiniDashboard.App.Converters`): Value converters for data binding
 
 ## Features
 
+### Backend (API)
 - RESTful API endpoints for CRUD operations
 - SQLite database for data persistence
 - Swagger/OpenAPI documentation
 - Dependency Injection
+- Global exception handling middleware
 - Unit tests with xUnit and Moq
+
+### Frontend (WPF Application)
+- Full MVVM pattern implementation (no code-behind logic)
+- CRUD operations: View, Add, Edit, Delete items
+- Real-time search functionality
+- Sort by Name, Created Date, or Updated Date
+- Loading indicators and error handling
+- Responsive UI with modern design
+- ObservableCollection for data binding
+- Async/await patterns for API calls
+- Dependency Injection configuration
 
 ## API Endpoints
 
@@ -70,9 +100,19 @@ cd MiniDashboard.Api
 dotnet run
 ```
 
+The API will start on `https://localhost:10133` (check `launchSettings.json` for the actual port).
+
 4. Access Swagger UI:
-- Navigate to `https://localhost:5001` or `http://localhost:5000`
+- Navigate to `https://localhost:10133` or the URL shown in the console
 - Swagger UI is available at the root path (configured in Program.cs)
+
+5. Run the WPF Application:
+```bash
+cd MiniDashboard.App
+dotnet run
+```
+
+**Important**: Make sure the API is running before starting the WPF application, as it depends on the API for data operations.
 
 ## Database
 
