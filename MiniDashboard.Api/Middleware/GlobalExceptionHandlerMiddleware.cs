@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text.Json;
-using MiniDashboard.Api.Models.Common;
+using MiniDashboard.Models.Common;
 
 namespace MiniDashboard.Api.Middleware;
 

@@ -1,4 +1,4 @@
-using MiniDashboard.Api.Models.DTOs;
+using MiniDashboard.Models.DTOs;
 
 namespace MiniDashboard.Api.Service;
 

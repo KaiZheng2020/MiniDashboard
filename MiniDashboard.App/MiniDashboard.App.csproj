@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiniDashboard.Api\MiniDashboard.Api.csproj" />
+    <ProjectReference Include="..\MiniDashboard.Models\MiniDashboard.Models.csproj" />
   </ItemGroup>
 
 </Project>

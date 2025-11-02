@@ -5,7 +5,6 @@ using System.Windows.Data;
 using System.Windows.Input;
 using Microsoft.Extensions.Logging;
 using MiniDashboard.App.Commands;
-using MiniDashboard.App.Models;
 using MiniDashboard.App.Services;
 
 namespace MiniDashboard.App.ViewModels;

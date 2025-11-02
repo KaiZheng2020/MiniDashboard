@@ -1,6 +1,6 @@
 using MiniDashboard.Api.Controllers;
-using MiniDashboard.Api.Models.Common;
-using MiniDashboard.Api.Models.DTOs;
+using MiniDashboard.Models.Common;
+using MiniDashboard.Models.DTOs;
 using MiniDashboard.Api.Service;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;

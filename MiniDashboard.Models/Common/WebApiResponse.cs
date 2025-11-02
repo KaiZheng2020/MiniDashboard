@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace MiniDashboard.Api.Models.Common;
+namespace MiniDashboard.Models.Common;
 
 public class WebApiResponse<T>
 {

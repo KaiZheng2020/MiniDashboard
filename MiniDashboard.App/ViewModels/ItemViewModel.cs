@@ -1,6 +1,7 @@
 using System.ComponentModel;
+using MiniDashboard.Models.DTOs;
 
-namespace MiniDashboard.App.Models;
+namespace MiniDashboard.App.ViewModels;
 
 public class ItemViewModel : INotifyPropertyChanged
 {
@@ -82,7 +83,7 @@ public class ItemViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public static ItemViewModel FromDto(MiniDashboard.Api.Models.DTOs.ItemDto dto)
+    public static ItemViewModel FromDto(ItemDto dto)
     {
         return new ItemViewModel
         {

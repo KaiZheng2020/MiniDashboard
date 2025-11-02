@@ -1,4 +1,4 @@
-namespace MiniDashboard.Api.Models.DTOs;
+namespace MiniDashboard.Models.DTOs;
 
 public class ItemDto
 {

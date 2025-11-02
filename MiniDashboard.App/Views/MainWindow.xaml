@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:MiniDashboard.App.ViewModels"
-        xmlns:models="clr-namespace:MiniDashboard.App.Models"
         xmlns:local="clr-namespace:MiniDashboard.App"
         mc:Ignorable="d"
         Title="Mini Dashboard" Height="600" Width="1000"

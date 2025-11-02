@@ -1,4 +1,4 @@
-using MiniDashboard.Api.Models.DTOs;
+using MiniDashboard.Models.DTOs;
 using MiniDashboard.Api.Models.Entities;
 using MiniDashboard.Api.Repository;
 using Microsoft.Extensions.Logging;

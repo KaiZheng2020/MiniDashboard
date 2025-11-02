@@ -1,4 +1,4 @@
-using MiniDashboard.App.Models;
+using MiniDashboard.App.ViewModels;
 
 namespace MiniDashboard.App.Services;
 

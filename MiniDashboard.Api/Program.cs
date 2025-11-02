@@ -1,4 +1,4 @@
-using MiniDashboard.Api.Models.Common;
+using MiniDashboard.Models.Common;
 using MiniDashboard.Api.Middleware;
 using MiniDashboard.Api.Repository;
 using MiniDashboard.Api.Service;

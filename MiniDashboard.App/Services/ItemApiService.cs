@@ -1,8 +1,8 @@
 using System.Net.Http;
 using System.Net.Http.Json;
-using MiniDashboard.Api.Models.Common;
-using MiniDashboard.Api.Models.DTOs;
-using MiniDashboard.App.Models;
+using MiniDashboard.Models.Common;
+using MiniDashboard.Models.DTOs;
+using MiniDashboard.App.ViewModels;
 
 namespace MiniDashboard.App.Services;
 
