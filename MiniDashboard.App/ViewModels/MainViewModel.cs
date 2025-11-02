@@ -25,6 +25,8 @@ public class MainViewModel : INotifyPropertyChanged
     private int _pageSize = 10;
     private int _totalCount = 0;
     private int _totalPages = 0;
+    private string? _currentSortField;
+    private ListSortDirection _currentSortDirection = ListSortDirection.Ascending;
 
     public MainViewModel(IItemApiService itemApiService, ILogger<MainViewModel> logger)
     {
@@ -220,6 +222,7 @@ public class MainViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(TotalPages));
                 OnPropertyChanged(nameof(HasPreviousPage));
                 OnPropertyChanged(nameof(HasNextPage));
+                OnPropertyChanged(nameof(HasPagination));
                 OnPropertyChanged(nameof(PageInfo));
             }
         }
@@ -227,6 +230,7 @@ public class MainViewModel : INotifyPropertyChanged
 
     public bool HasPreviousPage => CurrentPage > 1;
     public bool HasNextPage => CurrentPage < TotalPages;
+    public bool HasPagination => TotalPages > 0;
     public string PageInfo => TotalPages > 0 ? $"Page {CurrentPage} of {TotalPages} ({TotalCount} items)" : string.Empty;
 
     public ICommand LoadItemsCommand { get; }
@@ -266,6 +270,20 @@ public class MainViewModel : INotifyPropertyChanged
     private void SortItems(string sortBy)
     {
         _logger.LogInformation("Action: SortItems - Sorting by: {SortBy}", sortBy);
+        
+        // If clicking the same field, toggle direction; otherwise, set new field with ascending
+        if (_currentSortField == sortBy)
+        {
+            _currentSortDirection = _currentSortDirection == ListSortDirection.Ascending 
+                ? ListSortDirection.Descending 
+                : ListSortDirection.Ascending;
+        }
+        else
+        {
+            _currentSortField = sortBy;
+            _currentSortDirection = ListSortDirection.Ascending;
+        }
+        
         using (ItemsView.DeferRefresh())
         {
             ItemsView.SortDescriptions.Clear();
@@ -273,17 +291,18 @@ public class MainViewModel : INotifyPropertyChanged
             switch (sortBy)
             {
                 case "Name":
-                    ItemsView.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
+                    ItemsView.SortDescriptions.Add(new SortDescription("Name", _currentSortDirection));
                     break;
                 case "CreatedAt":
-                    ItemsView.SortDescriptions.Add(new SortDescription("CreatedAt", ListSortDirection.Descending));
+                    ItemsView.SortDescriptions.Add(new SortDescription("CreatedAt", _currentSortDirection));
                     break;
                 case "UpdatedAt":
-                    ItemsView.SortDescriptions.Add(new SortDescription("UpdatedAt", ListSortDirection.Descending));
+                    ItemsView.SortDescriptions.Add(new SortDescription("UpdatedAt", _currentSortDirection));
                     break;
             }
         }
-        _logger.LogInformation("Action: SortItems - Items sorted by: {SortBy}", sortBy);
+        _logger.LogInformation("Action: SortItems - Items sorted by: {SortBy} ({Direction})", 
+            sortBy, _currentSortDirection);
     }
 
     private async Task LoadItemsAsync()
