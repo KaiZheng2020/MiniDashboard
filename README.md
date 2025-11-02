@@ -55,6 +55,9 @@ The WPF application strictly follows the MVVM pattern:
 - Swagger/OpenAPI documentation
 - Dependency Injection
 - Global exception handling middleware
+- **Serilog logging** with file and console output
+- Comprehensive logging for all API endpoints (request start, success, error)
+- Configuration-driven logging via `appsettings.json`
 - Unit tests with xUnit and Moq
 
 ### Frontend (WPF Application)
@@ -67,6 +70,9 @@ The WPF application strictly follows the MVVM pattern:
 - ObservableCollection for data binding
 - Async/await patterns for API calls
 - Dependency Injection configuration
+- **Serilog logging** with file and console output
+- **Logging for all user actions** (startup, shutdown, CRUD operations)
+- **Configuration-driven settings** (API URL and logging via `appsettings.json`)
 
 ## API Endpoints
 
@@ -113,6 +119,138 @@ dotnet run
 ```
 
 **Important**: Make sure the API is running before starting the WPF application, as it depends on the API for data operations.
+
+## Configuration
+
+### API Configuration (`MiniDashboard.Api/appsettings.json`)
+
+The API configuration file contains:
+
+- **ConnectionStrings**: SQLite database connection string
+- **Serilog**: Logging configuration (console and file output)
+
+Example:
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=MiniDashboard.db"
+  },
+  "Serilog": {
+    "Using": [ "Serilog.Sinks.Console", "Serilog.Sinks.File" ],
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "Microsoft.AspNetCore": "Warning",
+        "System": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+        }
+      },
+      {
+        "Name": "File",
+        "Args": {
+          "path": "logs/minidashboard-api-.log",
+          "rollingInterval": "Day",
+          "retainedFileCountLimit": 30,
+          "fileSizeLimitBytes": 10485760,
+          "rollOnFileSizeLimit": true
+        }
+      }
+    ]
+  }
+}
+```
+
+### WPF Application Configuration (`MiniDashboard.App/appsettings.json`)
+
+The WPF application configuration file contains:
+
+- **ApiSettings**: API base URL (configurable)
+- **Serilog**: Logging configuration (console and file output)
+
+Example:
+```json
+{
+  "ApiSettings": {
+    "BaseUrl": "https://localhost:10133"
+  },
+  "Serilog": {
+    "Using": [ "Serilog.Sinks.Console", "Serilog.Sinks.File" ],
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "System": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+        }
+      },
+      {
+        "Name": "File",
+        "Args": {
+          "path": "logs/minidashboard-app-.log",
+          "rollingInterval": "Day",
+          "retainedFileCountLimit": 30,
+          "fileSizeLimitBytes": 10485760,
+          "rollOnFileSizeLimit": true
+        }
+      }
+    ]
+  }
+}
+```
+
+**Note**: To change the API URL, update `ApiSettings:BaseUrl` in `MiniDashboard.App/appsettings.json`.
+
+## Logging
+
+Both the API and WPF application use **Serilog** for structured logging with configuration-driven setup.
+
+### Log Output
+
+**API Logs**:
+- Console output: Real-time logging during development
+- File output: `MiniDashboard.Api/logs/minidashboard-api-YYYYMMDD.log`
+
+**WPF Application Logs**:
+- Console output: Real-time logging during development
+- File output: `MiniDashboard.App/bin/Debug/net8.0-windows/logs/minidashboard-app-YYYYMMDD.log`
+
+### Log Features
+
+- **Log Levels**: Information, Warning, Error, Fatal
+- **File Rolling**: Daily rotation with 30-day retention
+- **File Size Limit**: 10MB per file with automatic rollover
+- **Structured Logging**: JSON-friendly format with timestamps and context
+- **API Logging**: All endpoints log request start, success, and error states
+- **WPF Logging**: Application lifecycle (startup, shutdown) and all user actions
+
+### Configuring Log Levels
+
+Edit the `Serilog.MinimumLevel` section in `appsettings.json` to adjust logging verbosity:
+
+```json
+"MinimumLevel": {
+  "Default": "Information",  // Change to "Debug" for more details
+  "Override": {
+    "Microsoft": "Warning",
+    "System": "Warning"
+  }
+}
+```
+
+Available levels: `Verbose`, `Debug`, `Information`, `Warning`, `Error`, `Fatal`
 
 ## Database
 
@@ -186,11 +324,25 @@ dotnet test /p:CollectCoverage=true
 
 ## Project References
 
+### Backend (API)
 - Entity Framework Core 8.0.13
 - SQLite database provider
 - Swashbuckle.AspNetCore for Swagger
+- Serilog for logging
+- Serilog.Settings.Configuration for configuration-driven logging
+- Serilog.Sinks.Console and Serilog.Sinks.File for log output
 - xUnit for testing
 - Moq for mocking
+
+### Frontend (WPF Application)
+- Microsoft.Extensions.DependencyInjection for DI
+- Microsoft.Extensions.Http for HTTP client
+- Microsoft.Extensions.Configuration for configuration management
+- Microsoft.Extensions.Logging for logging abstraction
+- Serilog for structured logging
+- Serilog.Extensions.Logging for ILogger integration
+- Serilog.Settings.Configuration for configuration-driven logging
+- Serilog.Sinks.Console and Serilog.Sinks.File for log output
 
 ## Design Patterns
 
@@ -198,4 +350,30 @@ dotnet test /p:CollectCoverage=true
 - **Dependency Injection**: Used throughout the application
 - **DTO Pattern**: Separates API contracts from entities
 - **Service Layer Pattern**: Encapsulates business logic
+- **MVVM Pattern**: Strict separation of concerns in WPF application
+- **Configuration Pattern**: Externalized configuration via `appsettings.json`
+
+## Development Notes
+
+### Logging Best Practices
+
+1. **API Logging**: All controllers use `ILogger<T>` to log:
+   - Request initiation (Information level)
+   - Successful operations with context data
+   - Errors with full exception details
+
+2. **WPF Logging**: ViewModels use `ILogger<T>` to log:
+   - Application lifecycle events (startup, shutdown)
+   - All user actions (LoadItems, AddItem, EditItem, SaveItem, DeleteItem)
+   - Errors with full exception details
+
+3. **Configuration**: Both projects use configuration-driven logging, allowing log levels and outputs to be changed without recompiling.
+
+### Configuration Management
+
+- **API URL**: Configured in `MiniDashboard.App/appsettings.json` under `ApiSettings:BaseUrl`
+- **Database Connection**: Configured in `MiniDashboard.Api/appsettings.json` under `ConnectionStrings:DefaultConnection`
+- **Logging**: Configured in both `appsettings.json` files under `Serilog` section
+
+All configurations support environment-specific overrides (e.g., `appsettings.Development.json`).
 
