@@ -1,5 +1,6 @@
 using MiniDashboard.Models.Common;
 using MiniDashboard.Models.DTOs;
+using PagedResponse = MiniDashboard.Models.Common.PagedResponse<MiniDashboard.Models.DTOs.ItemDto>;
 using MiniDashboard.Api.Service;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,22 +20,33 @@ public class ItemsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all items
+    /// Get all items (with optional pagination)
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(WebApiResponse<List<ItemDto>>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<WebApiResponse<List<ItemDto>>>> GetAllItems()
+    public async Task<ActionResult<WebApiResponse<List<ItemDto>>>> GetAllItems([FromQuery] int? page = null, [FromQuery] int? pageSize = null)
     {
-        _logger.LogInformation("GET /api/items - Request received to get all items");
+        _logger.LogInformation("GET /api/items - Request received to get items. Page: {Page}, PageSize: {PageSize}", page, pageSize);
         try
         {
-            var items = await _itemService.GetAllAsync();
-            _logger.LogInformation("GET /api/items - Successfully retrieved {Count} items", items.Count);
-            return Ok(WebApiResponse<List<ItemDto>>.Ok(items));
+            if (page.HasValue && pageSize.HasValue && page > 0 && pageSize > 0)
+            {
+                var (items, totalCount) = await _itemService.GetAllPagedAsync(page.Value, pageSize.Value);
+                var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize.Value);
+                _logger.LogInformation("GET /api/items - Successfully retrieved {Count} items (Page {Page} of {TotalPages}, Total: {TotalCount})", 
+                    items.Count, page.Value, totalPages, totalCount);
+                return Ok(WebApiResponse<List<ItemDto>>.Ok(items, totalCount, page.Value, pageSize.Value, totalPages));
+            }
+            else
+            {
+                var items = await _itemService.GetAllAsync();
+                _logger.LogInformation("GET /api/items - Successfully retrieved {Count} items (all items)", items.Count);
+                return Ok(WebApiResponse<List<ItemDto>>.Ok(items));
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "GET /api/items - Error retrieving all items: {ErrorMessage}", ex.Message);
+            _logger.LogError(ex, "GET /api/items - Error retrieving items: {ErrorMessage}", ex.Message);
             return StatusCode(500, WebApiResponse<List<ItemDto>>.Fail("Internal server error"));
         }
     }
@@ -67,18 +79,29 @@ public class ItemsController : ControllerBase
     }
 
     /// <summary>
-    /// Search items by query string
+    /// Search items by query string (with optional pagination)
     /// </summary>
     [HttpGet("search")]
     [ProducesResponseType(typeof(WebApiResponse<List<ItemDto>>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<WebApiResponse<List<ItemDto>>>> SearchItems([FromQuery] string query)
+    public async Task<ActionResult<WebApiResponse<List<ItemDto>>>> SearchItems([FromQuery] string query, [FromQuery] int? page = null, [FromQuery] int? pageSize = null)
     {
-        _logger.LogInformation("GET /api/items/search?query={Query} - Request received to search items", query);
+        _logger.LogInformation("GET /api/items/search?query={Query} - Request received to search items. Page: {Page}, PageSize: {PageSize}", query, page, pageSize);
         try
         {
-            var items = await _itemService.SearchAsync(query);
-            _logger.LogInformation("GET /api/items/search?query={Query} - Successfully found {Count} items", query, items.Count);
-            return Ok(WebApiResponse<List<ItemDto>>.Ok(items));
+            if (page.HasValue && pageSize.HasValue && page > 0 && pageSize > 0)
+            {
+                var (items, totalCount) = await _itemService.SearchPagedAsync(query ?? string.Empty, page.Value, pageSize.Value);
+                var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize.Value);
+                _logger.LogInformation("GET /api/items/search?query={Query} - Successfully found {Count} items (Page {Page} of {TotalPages}, Total: {TotalCount})", 
+                    query, items.Count, page.Value, totalPages, totalCount);
+                return Ok(WebApiResponse<List<ItemDto>>.Ok(items, totalCount, page.Value, pageSize.Value, totalPages));
+            }
+            else
+            {
+                var items = await _itemService.SearchAsync(query ?? string.Empty);
+                _logger.LogInformation("GET /api/items/search?query={Query} - Successfully found {Count} items (all results)", query, items.Count);
+                return Ok(WebApiResponse<List<ItemDto>>.Ok(items));
+            }
         }
         catch (Exception ex)
         {

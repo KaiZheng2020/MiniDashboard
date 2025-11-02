@@ -21,6 +21,10 @@ public class MainViewModel : INotifyPropertyChanged
     private string _nameInput = string.Empty;
     private string _descriptionInput = string.Empty;
     private bool _isEditMode;
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+    private int _totalCount = 0;
+    private int _totalPages = 0;
 
     public MainViewModel(IItemApiService itemApiService, ILogger<MainViewModel> logger)
     {
@@ -35,13 +39,17 @@ public class MainViewModel : INotifyPropertyChanged
         ItemsView.Filter = FilterItems;
 
         LoadItemsCommand = new AsyncRelayCommand(async _ => await LoadItemsAsync(), _ => !IsLoading);
-        SearchCommand = new RelayCommand(_ => RefreshItemsView(), _ => !IsLoading);
+        SearchCommand = new AsyncRelayCommand(async _ => await LoadItemsAsync(), _ => !IsLoading);
         AddCommand = new AsyncRelayCommand(async _ => await AddItemAsync(), _ => !IsLoading && !IsEditMode && !string.IsNullOrWhiteSpace(NameInput));
         EditCommand = new RelayCommand(_ => EditItem(), _ => !IsLoading && !IsEditMode && SelectedItem != null);
         DeleteCommand = new AsyncRelayCommand<ItemViewModel>(async item => await DeleteItemAsync(item), _ => !IsLoading && !IsEditMode);
         SaveCommand = new AsyncRelayCommand(async _ => await SaveItemAsync(), _ => !IsLoading && !string.IsNullOrWhiteSpace(NameInput));
         CancelCommand = new RelayCommand(_ => CancelEdit(), _ => IsEditMode);
         SortCommand = new RelayCommand<string>(sortBy => SortItems(sortBy ?? "Name"), _ => !IsLoading);
+        FirstPageCommand = new AsyncRelayCommand(async _ => await GoToPageAsync(1), _ => !IsLoading && CurrentPage > 1);
+        PreviousPageCommand = new AsyncRelayCommand(async _ => await GoToPageAsync(CurrentPage - 1), _ => !IsLoading && CurrentPage > 1);
+        NextPageCommand = new AsyncRelayCommand(async _ => await GoToPageAsync(CurrentPage + 1), _ => !IsLoading && CurrentPage < TotalPages);
+        LastPageCommand = new AsyncRelayCommand(async _ => await GoToPageAsync(TotalPages), _ => !IsLoading && CurrentPage < TotalPages);
         
         // Load items on startup
         _ = LoadItemsAsync();
@@ -60,7 +68,12 @@ public class MainViewModel : INotifyPropertyChanged
             {
                 _searchQuery = value;
                 OnPropertyChanged(nameof(SearchQuery));
-                RefreshItemsView();
+                // Reset to first page when search query changes
+                if (CurrentPage != 1)
+                {
+                    CurrentPage = 1;
+                }
+                _ = LoadItemsAsync();
             }
         }
     }
@@ -154,6 +167,68 @@ public class MainViewModel : INotifyPropertyChanged
 
     public bool IsNotEditMode => !IsEditMode;
 
+    public int CurrentPage
+    {
+        get => _currentPage;
+        set
+        {
+            if (_currentPage != value)
+            {
+                _currentPage = value;
+                OnPropertyChanged(nameof(CurrentPage));
+                OnPropertyChanged(nameof(HasPreviousPage));
+                OnPropertyChanged(nameof(HasNextPage));
+            }
+        }
+    }
+
+    public int PageSize
+    {
+        get => _pageSize;
+        set
+        {
+            if (_pageSize != value && value > 0)
+            {
+                _pageSize = value;
+                OnPropertyChanged(nameof(PageSize));
+                _ = LoadItemsAsync();
+            }
+        }
+    }
+
+    public int TotalCount
+    {
+        get => _totalCount;
+        set
+        {
+            if (_totalCount != value)
+            {
+                _totalCount = value;
+                OnPropertyChanged(nameof(TotalCount));
+            }
+        }
+    }
+
+    public int TotalPages
+    {
+        get => _totalPages;
+        set
+        {
+            if (_totalPages != value)
+            {
+                _totalPages = value;
+                OnPropertyChanged(nameof(TotalPages));
+                OnPropertyChanged(nameof(HasPreviousPage));
+                OnPropertyChanged(nameof(HasNextPage));
+                OnPropertyChanged(nameof(PageInfo));
+            }
+        }
+    }
+
+    public bool HasPreviousPage => CurrentPage > 1;
+    public bool HasNextPage => CurrentPage < TotalPages;
+    public string PageInfo => TotalPages > 0 ? $"Page {CurrentPage} of {TotalPages} ({TotalCount} items)" : string.Empty;
+
     public ICommand LoadItemsCommand { get; }
     public ICommand SearchCommand { get; }
     public ICommand AddCommand { get; }
@@ -162,6 +237,10 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand SaveCommand { get; }
     public ICommand CancelCommand { get; }
     public ICommand SortCommand { get; }
+    public ICommand FirstPageCommand { get; }
+    public ICommand PreviousPageCommand { get; }
+    public ICommand NextPageCommand { get; }
+    public ICommand LastPageCommand { get; }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -180,10 +259,8 @@ public class MainViewModel : INotifyPropertyChanged
 
     private void RefreshItemsView()
     {
-        _logger.LogInformation("Action: RefreshItemsView - Refreshing items view with search query: {Query}", SearchQuery);
-        ItemsView.Refresh();
-        _logger.LogInformation("Action: RefreshItemsView - Items view refreshed. Visible count: {Count}", 
-            ItemsView.Cast<object>().Count());
+        // No longer needed - we use server-side pagination
+        // Keeping for backward compatibility if needed
     }
 
     private void SortItems(string sortBy)
@@ -211,22 +288,47 @@ public class MainViewModel : INotifyPropertyChanged
 
     private async Task LoadItemsAsync()
     {
-        _logger.LogInformation("Action: LoadItems - Started");
+        _logger.LogInformation("Action: LoadItems - Started. Page: {Page}, PageSize: {PageSize}, SearchQuery: {Query}", 
+            CurrentPage, PageSize, SearchQuery);
         IsLoading = true;
         ErrorMessage = string.Empty;
 
         try
         {
-            _logger.LogInformation("Action: LoadItems - Calling API to get all items");
-            var items = await _itemApiService.GetAllItemsAsync();
-            _logger.LogInformation("Action: LoadItems - Received {Count} items from API", items.Count);
-            
-            Items.Clear();
-            foreach (var item in items)
+            if (string.IsNullOrWhiteSpace(SearchQuery))
             {
-                Items.Add(item);
+                _logger.LogInformation("Action: LoadItems - Calling API to get paged items");
+                var (items, totalCount, page, pageSize, totalPages) = await _itemApiService.GetAllItemsPagedAsync(CurrentPage, PageSize);
+                _logger.LogInformation("Action: LoadItems - Received {Count} items from API (Page {Page} of {TotalPages}, Total: {TotalCount})", 
+                    items.Count, page, totalPages, totalCount);
+                
+                Items.Clear();
+                foreach (var item in items)
+                {
+                    Items.Add(item);
+                }
+                TotalCount = totalCount;
+                TotalPages = totalPages;
+                CurrentPage = page;
+                _logger.LogInformation("Action: LoadItems - Successfully loaded {Count} items", items.Count);
             }
-            _logger.LogInformation("Action: LoadItems - Successfully loaded {Count} items", items.Count);
+            else
+            {
+                _logger.LogInformation("Action: LoadItems - Calling API to search paged items");
+                var (items, totalCount, page, pageSize, totalPages) = await _itemApiService.SearchItemsPagedAsync(SearchQuery, CurrentPage, PageSize);
+                _logger.LogInformation("Action: LoadItems - Received {Count} items from API (Page {Page} of {TotalPages}, Total: {TotalCount})", 
+                    items.Count, page, totalPages, totalCount);
+                
+                Items.Clear();
+                foreach (var item in items)
+                {
+                    Items.Add(item);
+                }
+                TotalCount = totalCount;
+                TotalPages = totalPages;
+                CurrentPage = page;
+                _logger.LogInformation("Action: LoadItems - Successfully loaded {Count} items", items.Count);
+            }
         }
         catch (HttpRequestException ex)
         {
@@ -245,6 +347,15 @@ public class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    private async Task GoToPageAsync(int page)
+    {
+        if (page < 1 || page > TotalPages)
+            return;
+
+        CurrentPage = page;
+        await LoadItemsAsync();
+    }
+
     private async Task AddItemAsync()
     {
         _logger.LogInformation("Action: AddItem - Started. Name: {ItemName}", NameInput);
@@ -258,10 +369,11 @@ public class MainViewModel : INotifyPropertyChanged
             _logger.LogInformation("Action: AddItem - Item created successfully with ID: {ItemId}, Name: {ItemName}", 
                 newItem.Id, newItem.Name);
             
-            Items.Insert(0, newItem);
+            // Reload items to show new item in correct position (might be on different page)
+            await LoadItemsAsync();
             NameInput = string.Empty;
             DescriptionInput = string.Empty;
-            _logger.LogInformation("Action: AddItem - Successfully added item to collection");
+            _logger.LogInformation("Action: AddItem - Successfully added item, reloaded items");
         }
         catch (HttpRequestException ex)
         {
@@ -320,12 +432,13 @@ public class MainViewModel : INotifyPropertyChanged
             _logger.LogInformation("Action: SaveItem - Item updated successfully. ID: {ItemId}, Name: {ItemName}", 
                 updatedItem.Id, updatedItem.Name);
 
-            var index = Items.IndexOf(SelectedItem);
-            if (index >= 0)
+            // Reload items to ensure correct order
+            await LoadItemsAsync();
+            // Try to find and select the updated item
+            var updatedItemInList = Items.FirstOrDefault(i => i.Id == updatedItem.Id);
+            if (updatedItemInList != null)
             {
-                Items[index] = updatedItem;
-                SelectedItem = updatedItem;
-                _logger.LogInformation("Action: SaveItem - Updated item in collection at index: {Index}", index);
+                SelectedItem = updatedItemInList;
             }
 
             IsEditMode = false;
@@ -390,17 +503,19 @@ public class MainViewModel : INotifyPropertyChanged
             if (success)
             {
                 _logger.LogInformation("Action: DeleteItem - Item deleted successfully from API");
-                Items.Remove(item);
-                _logger.LogInformation("Action: DeleteItem - Item removed from collection");
                 
-                if (SelectedItem == item)
+                // Reload items to update pagination
+                await LoadItemsAsync();
+                
+                // Clear selection if deleted item was selected
+                if (SelectedItem?.Id == item.Id)
                 {
                     SelectedItem = null;
                     NameInput = string.Empty;
                     DescriptionInput = string.Empty;
                     _logger.LogInformation("Action: DeleteItem - Cleared selected item");
                 }
-                _logger.LogInformation("Action: DeleteItem - Successfully deleted item ID: {ItemId}", item.Id);
+                _logger.LogInformation("Action: DeleteItem - Successfully deleted item ID: {ItemId}, reloaded items", item.Id);
             }
             else
             {

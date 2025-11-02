@@ -17,6 +17,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -38,7 +39,15 @@
             <Button Content="By Created Date" Command="{Binding SortCommand}" CommandParameter="CreatedAt" 
                     Padding="10,5" Margin="0,0,5,0"/>
             <Button Content="By Updated Date" Command="{Binding SortCommand}" CommandParameter="UpdatedAt" 
-                    Padding="10,5"/>
+                    Padding="10,5" Margin="0,0,10,0"/>
+            <TextBlock Text="Page Size:" VerticalAlignment="Center" Margin="10,0,5,0"/>
+            <ComboBox Width="80" SelectedValue="{Binding PageSize, UpdateSourceTrigger=PropertyChanged}" 
+                      SelectedValuePath="Tag" VerticalContentAlignment="Center" Padding="5,0">
+                <ComboBoxItem Tag="5" Content="5"/>
+                <ComboBoxItem Tag="10" Content="10"/>
+                <ComboBoxItem Tag="20" Content="20"/>
+                <ComboBoxItem Tag="50" Content="50"/>
+            </ComboBox>
         </StackPanel>
 
         <!-- Main Content -->
@@ -73,6 +82,7 @@
                             <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
                             <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2*"/>
                             <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt, StringFormat=yyyy-MM-dd HH:mm}" Width="150"/>
+                            <DataGridTextColumn Header="Updated At" Binding="{Binding UpdatedAt, StringFormat=yyyy-MM-dd HH:mm}" Width="150"/>
                             <DataGridTemplateColumn Header="Actions" Width="80">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -134,8 +144,37 @@
             </Border>
         </Grid>
 
+        <!-- Pagination Controls -->
+        <Grid Grid.Row="3" Margin="0,10,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <TextBlock Grid.Column="0" Text="{Binding PageInfo}" 
+                       VerticalAlignment="Center" Margin="5,0,0,0"
+                       FontWeight="SemiBold"
+                       Visibility="{Binding TotalPages, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right"
+                       Visibility="{Binding TotalPages, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Button Content="« First" Command="{Binding FirstPageCommand}" 
+                        Padding="10,5" Margin="0,0,5,0" 
+                        IsEnabled="{Binding HasPreviousPage}"/>
+                <Button Content="‹ Previous" Command="{Binding PreviousPageCommand}" 
+                        Padding="10,5" Margin="0,0,5,0"
+                        IsEnabled="{Binding HasPreviousPage}"/>
+                <Button Content="Next ›" Command="{Binding NextPageCommand}" 
+                        Padding="10,5" Margin="0,0,5,0"
+                        IsEnabled="{Binding HasNextPage}"/>
+                <Button Content="Last »" Command="{Binding LastPageCommand}" 
+                        Padding="10,5"
+                        IsEnabled="{Binding HasNextPage}"/>
+            </StackPanel>
+        </Grid>
+
         <!-- Status Bar -->
-        <Grid Grid.Row="3" Margin="0,10,0,0">
+        <Grid Grid.Row="4" Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>

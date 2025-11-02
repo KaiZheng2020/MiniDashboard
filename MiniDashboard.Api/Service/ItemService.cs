@@ -30,6 +30,24 @@ public class ItemService : IItemService
         }
     }
 
+    public async Task<(List<ItemDto> Items, int TotalCount)> GetAllPagedAsync(int page, int pageSize)
+    {
+        try
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100; // Limit max page size
+
+            var (items, totalCount) = await _repository.GetAllPagedAsync(page, pageSize);
+            return (items.Select(MapToDto).ToList(), totalCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving paged items. Page: {Page}, PageSize: {PageSize}", page, pageSize);
+            throw;
+        }
+    }
+
     public async Task<ItemDto?> GetByIdAsync(int id)
     {
         try
@@ -59,6 +77,24 @@ public class ItemService : IItemService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error searching items with query: {Query}", query);
+            throw;
+        }
+    }
+
+    public async Task<(List<ItemDto> Items, int TotalCount)> SearchPagedAsync(string query, int page, int pageSize)
+    {
+        try
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100; // Limit max page size
+
+            var (items, totalCount) = await _repository.SearchPagedAsync(query, page, pageSize);
+            return (items.Select(MapToDto).ToList(), totalCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching paged items. Query: {Query}, Page: {Page}, PageSize: {PageSize}", query, page, pageSize);
             throw;
         }
     }

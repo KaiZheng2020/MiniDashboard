@@ -19,6 +19,17 @@ public class ItemRepository : IItemRepository
             .ToListAsync();
     }
 
+    public async Task<(List<Item> Items, int TotalCount)> GetAllPagedAsync(int page, int pageSize)
+    {
+        var query = _context.Items.OrderBy(i => i.Name);
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        return (items, totalCount);
+    }
+
     public async Task<Item?> GetByIdAsync(int id)
     {
         return await _context.Items.FindAsync(id);
@@ -35,6 +46,25 @@ public class ItemRepository : IItemRepository
                        (i.Description != null && i.Description.ToLower().Contains(lowerQuery)))
             .OrderBy(i => i.Name)
             .ToListAsync();
+    }
+
+    public async Task<(List<Item> Items, int TotalCount)> SearchPagedAsync(string query, int page, int pageSize)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return await GetAllPagedAsync(page, pageSize);
+
+        var lowerQuery = query.ToLowerInvariant();
+        var baseQuery = _context.Items
+            .Where(i => i.Name.ToLower().Contains(lowerQuery) ||
+                       (i.Description != null && i.Description.ToLower().Contains(lowerQuery)))
+            .OrderBy(i => i.Name);
+
+        var totalCount = await baseQuery.CountAsync();
+        var items = await baseQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+        return (items, totalCount);
     }
 
     public async Task<Item> AddAsync(Item item)
@@ -63,4 +93,3 @@ public class ItemRepository : IItemRepository
         }
     }
 }
-

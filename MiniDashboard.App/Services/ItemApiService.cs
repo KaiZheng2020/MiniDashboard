@@ -32,6 +32,24 @@ public class ItemApiService : IItemApiService
         }
     }
 
+    public async Task<(List<ItemViewModel> Items, int TotalCount, int Page, int PageSize, int TotalPages)> GetAllItemsPagedAsync(int page, int pageSize)
+    {
+        try
+        {
+            var response = await _httpClient.GetFromJsonAsync<WebApiResponse<List<ItemDto>>>($"/api/items?page={page}&pageSize={pageSize}");
+            if (response?.Success == true && response.Data != null && response.Page.HasValue && response.PageSize.HasValue && response.TotalPages.HasValue)
+            {
+                var items = response.Data.Select(ItemViewModel.FromDto).ToList();
+                return (items, response.Total, response.Page.Value, response.PageSize.Value, response.TotalPages.Value);
+            }
+            return (new List<ItemViewModel>(), 0, page, pageSize, 0);
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+    }
+
     public async Task<ItemViewModel?> GetItemByIdAsync(int id)
     {
         try
@@ -60,6 +78,25 @@ public class ItemApiService : IItemApiService
                 return response.Data.Select(ItemViewModel.FromDto).ToList();
             }
             return new List<ItemViewModel>();
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+    }
+
+    public async Task<(List<ItemViewModel> Items, int TotalCount, int Page, int PageSize, int TotalPages)> SearchItemsPagedAsync(string query, int page, int pageSize)
+    {
+        try
+        {
+            var encodedQuery = Uri.EscapeDataString(query);
+            var response = await _httpClient.GetFromJsonAsync<WebApiResponse<List<ItemDto>>>($"/api/items/search?query={encodedQuery}&page={page}&pageSize={pageSize}");
+            if (response?.Success == true && response.Data != null && response.Page.HasValue && response.PageSize.HasValue && response.TotalPages.HasValue)
+            {
+                var items = response.Data.Select(ItemViewModel.FromDto).ToList();
+                return (items, response.Total, response.Page.Value, response.PageSize.Value, response.TotalPages.Value);
+            }
+            return (new List<ItemViewModel>(), 0, page, pageSize, 0);
         }
         catch (HttpRequestException)
         {
