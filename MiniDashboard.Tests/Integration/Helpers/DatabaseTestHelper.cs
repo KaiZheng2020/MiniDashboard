@@ -37,20 +37,21 @@ public static class DatabaseTestHelper
     }
     
     /// <summary>
-    /// Recreates the test database (deletes old database and applies migrations)
-    /// If the database exists, it will be completely deleted and recreated.
+    /// Ensures the test database is ready for testing.
+    /// If the database file exists, clears the Items table.
+    /// If the database file doesn't exist, creates the database and applies migrations.
     /// </summary>
     public static async Task RecreateDatabaseAsync(MiniDashboardDbContext context, string dbPath)
     {
-        // Step 1: Delete database via EF Core (deletes the .db file)
-        await context.Database.EnsureDeletedAsync();
-        
-        // Step 2: Delete SQLite WAL and SHM files if they exist
-        // EnsureDeletedAsync may not delete these auxiliary files
-        DeleteTestDatabase(dbPath);
-        
-        // Step 3: Recreate database and apply migrations (creates new database)
+        // Ensure migrations are applied first
         await context.Database.MigrateAsync();
+        
+        // Check if database file exists (after migration, it should exist now)
+        if (File.Exists(dbPath))
+        {
+            // Database exists: clear Items table using SQL for efficiency
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM Items");
+        }
     }
     
     /// <summary>
