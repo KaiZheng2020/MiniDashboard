@@ -9,7 +9,7 @@ using Serilog;
 
 try
 {
-    var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
     // Configure Serilog from configuration
     Log.Logger = new LoggerConfiguration()
@@ -21,72 +21,72 @@ try
     // Configure Serilog for dependency injection
     builder.Host.UseSerilog();
 
-    // Configuration
-    var configuration = builder.Configuration;
-    var services = builder.Services;
+// Configuration
+var configuration = builder.Configuration;
+var services = builder.Services;
 
-    // Database connection string
-    var connectionString = configuration.GetConnectionString("DefaultConnection")
-        ?? "Data Source=MiniDashboard.db";
+// Database connection string
+var connectionString = configuration.GetConnectionString("DefaultConnection")
+    ?? "Data Source=MiniDashboard.db";
 
-    // Services
-    services.AddControllers();
-    services.AddEndpointsApiExplorer();
-    services.AddSwaggerGen(c =>
+// Services
+services.AddControllers();
+services.AddEndpointsApiExplorer();
+services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
     {
-        c.SwaggerDoc("v1", new OpenApiInfo
-        {
-            Title = "MiniDashboard API",
-            Version = "v1",
-            Description = "A simple CRUD API for managing items"
-        });
+        Title = "MiniDashboard API",
+        Version = "v1",
+        Description = "A simple CRUD API for managing items"
     });
+});
 
-    // Database context with SQLite
-    services.AddDbContext<MiniDashboardDbContext>(options =>
-        options.UseSqlite(connectionString));
+// Database context with SQLite
+services.AddDbContext<MiniDashboardDbContext>(options =>
+    options.UseSqlite(connectionString));
 
-    // Dependency injection
-    services.AddScoped<IItemRepository, ItemRepository>();
-    services.AddScoped<IItemService, ItemService>();
+// Dependency injection
+services.AddScoped<IItemRepository, ItemRepository>();
+services.AddScoped<IItemService, ItemService>();
 
-    // Custom model validation error response
-    services.Configure<ApiBehaviorOptions>(options =>
+// Custom model validation error response
+services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
     {
-        options.InvalidModelStateResponseFactory = context =>
-        {
-            var errors = context.ModelState.Values
-                .SelectMany(v => v.Errors)
-                .Select(e => e.ErrorMessage)
-                .ToList();
-            var response = WebApiResponse<string>.Fail("Validation failed: " + string.Join("; ", errors));
-            return new BadRequestObjectResult(response);
-        };
+        var errors = context.ModelState.Values
+            .SelectMany(v => v.Errors)
+            .Select(e => e.ErrorMessage)
+            .ToList();
+        var response = WebApiResponse<string>.Fail("Validation failed: " + string.Join("; ", errors));
+        return new BadRequestObjectResult(response);
+    };
+});
+
+var app = builder.Build();
+
+// Global exception handler middleware (should be first in the pipeline)
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+
+// Development middleware
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "MiniDashboard API v1");
+        c.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
     });
+}
 
-    var app = builder.Build();
-
-    // Global exception handler middleware (should be first in the pipeline)
-    app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
-
-    // Development middleware
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "MiniDashboard API v1");
-            c.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
-        });
-    }
-
-    app.UseHttpsRedirection();
-    app.UseAuthorization();
-    app.MapControllers();
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
 
     Log.Information("MiniDashboard API is running");
 
-    app.Run();
+app.Run();
 }
 catch (Exception ex)
 {
@@ -96,4 +96,7 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Make Program class accessible for integration testing
+public partial class Program { }
 

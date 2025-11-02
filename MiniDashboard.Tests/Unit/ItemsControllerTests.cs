@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
-namespace MiniDashboard.Tests;
+namespace MiniDashboard.Tests.Unit;
 
 public class ItemsControllerTests
 {

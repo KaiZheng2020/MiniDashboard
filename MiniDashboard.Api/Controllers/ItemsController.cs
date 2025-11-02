@@ -29,13 +29,17 @@ public class ItemsController : ControllerBase
         _logger.LogInformation("GET /api/items - Request received to get items. Page: {Page}, PageSize: {PageSize}", page, pageSize);
         try
         {
-            if (page.HasValue && pageSize.HasValue && page > 0 && pageSize > 0)
+            if (page.HasValue && pageSize.HasValue)
             {
-                var (items, totalCount) = await _itemService.GetAllPagedAsync(page.Value, pageSize.Value);
-                var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize.Value);
+                // Normalize page and pageSize (even if invalid values are provided)
+                var normalizedPage = page.Value < 1 ? 1 : page.Value;
+                var normalizedPageSize = pageSize.Value < 1 ? 10 : (pageSize.Value > 100 ? 100 : pageSize.Value);
+                
+                var (items, totalCount) = await _itemService.GetAllPagedAsync(normalizedPage, normalizedPageSize);
+                var totalPages = (int)Math.Ceiling(totalCount / (double)normalizedPageSize);
                 _logger.LogInformation("GET /api/items - Successfully retrieved {Count} items (Page {Page} of {TotalPages}, Total: {TotalCount})", 
-                    items.Count, page.Value, totalPages, totalCount);
-                return Ok(WebApiResponse<List<ItemDto>>.Ok(items, totalCount, page.Value, pageSize.Value, totalPages));
+                    items.Count, normalizedPage, totalPages, totalCount);
+                return Ok(WebApiResponse<List<ItemDto>>.Ok(items, totalCount, normalizedPage, normalizedPageSize, totalPages));
             }
             else
             {
@@ -83,18 +87,22 @@ public class ItemsController : ControllerBase
     /// </summary>
     [HttpGet("search")]
     [ProducesResponseType(typeof(WebApiResponse<List<ItemDto>>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<WebApiResponse<List<ItemDto>>>> SearchItems([FromQuery] string query, [FromQuery] int? page = null, [FromQuery] int? pageSize = null)
+    public async Task<ActionResult<WebApiResponse<List<ItemDto>>>> SearchItems([FromQuery(Name = "query")] string? query = null, [FromQuery] int? page = null, [FromQuery] int? pageSize = null)
     {
         _logger.LogInformation("GET /api/items/search?query={Query} - Request received to search items. Page: {Page}, PageSize: {PageSize}", query, page, pageSize);
         try
         {
             if (page.HasValue && pageSize.HasValue && page > 0 && pageSize > 0)
             {
-                var (items, totalCount) = await _itemService.SearchPagedAsync(query ?? string.Empty, page.Value, pageSize.Value);
-                var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize.Value);
+                // Normalize page and pageSize
+                var normalizedPage = page.Value < 1 ? 1 : page.Value;
+                var normalizedPageSize = pageSize.Value < 1 ? 10 : (pageSize.Value > 100 ? 100 : pageSize.Value);
+                
+                var (items, totalCount) = await _itemService.SearchPagedAsync(query ?? string.Empty, normalizedPage, normalizedPageSize);
+                var totalPages = (int)Math.Ceiling(totalCount / (double)normalizedPageSize);
                 _logger.LogInformation("GET /api/items/search?query={Query} - Successfully found {Count} items (Page {Page} of {TotalPages}, Total: {TotalCount})", 
-                    query, items.Count, page.Value, totalPages, totalCount);
-                return Ok(WebApiResponse<List<ItemDto>>.Ok(items, totalCount, page.Value, pageSize.Value, totalPages));
+                    query, items.Count, normalizedPage, totalPages, totalCount);
+                return Ok(WebApiResponse<List<ItemDto>>.Ok(items, totalCount, normalizedPage, normalizedPageSize, totalPages));
             }
             else
             {
