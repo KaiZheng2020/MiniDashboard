@@ -482,3 +482,54 @@ All configurations support environment-specific overrides (e.g., `appsettings.De
 - Date columns (Created At, Updated At) are compact
 - Responsive layout adapts to window size
 
+## TODO / Future Enhancements
+
+### Security & Authentication
+- [ ] **Implement OAuth 2.0 / OpenID Connect authentication with Azure AD B2C**
+  - Protect Web API endpoints with JWT Bearer authentication
+  - Configure Azure AD B2C tenant and application registrations
+  - Implement authentication middleware in ASP.NET Core API
+  - Add user authentication flow in WPF application
+  - Support role-based authorization (RBAC)
+  - Implement token refresh mechanism
+  - Add API key authentication as alternative for service-to-service communication
+  - Configure CORS policies for cross-origin requests
+  - Add rate limiting and throttling for API endpoints
+
+### Infrastructure & DevOps
+- [ ] **Implement CI/CD pipeline with automated testing and deployment**
+  - Set up GitHub Actions or Azure DevOps pipeline
+  - Automatically run unit tests on every commit/PR
+  - Automatically run integration tests with test database
+  - Generate test coverage reports
+  - Build and publish artifacts
+  - Deploy to staging environment on successful tests
+  - Deploy to production environment on release tags
+  - Add build status badges to README
+  - Configure branch protection rules (require passing tests before merge)
+- [ ] Containerize with Docker
+- [ ] Deploy to Azure App Service or Kubernetes
+- [ ] Implement distributed tracing (Application Insights, Jaeger)
+- [ ] Add performance monitoring and alerting
+- [ ] Implement blue-green deployment strategy
+- [ ] Add database migration automation
+
+### Additional Features
+- [ ] Add user management and profiles
+- [ ] Implement audit logging for all data modifications
+- [ ] Add file upload/download functionality
+- [ ] Implement real-time notifications (SignalR)
+- [ ] Add export functionality (CSV, Excel, PDF)
+- [ ] Implement data validation and business rules
+- [ ] Add API versioning
+- [ ] Implement caching layer (Redis, in-memory)
+- [ ] Add health checks and monitoring endpoints
+- [ ] Implement WebSocket support for real-time updates
+
+### Documentation
+- [ ] Add API documentation with examples
+- [ ] Create architecture diagrams
+- [ ] Add deployment guides
+- [ ] Create developer onboarding guide
+- [ ] Add troubleshooting guide
+
