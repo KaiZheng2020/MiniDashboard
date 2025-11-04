@@ -11,6 +11,7 @@ public class WebApiResponse<T>
     public int? Page { get; set; }
     public int? PageSize { get; set; }
     public int? TotalPages { get; set; }
+    public string? NextCursor { get; set; }
 
     // Parameterless constructor for JSON deserialization
     public WebApiResponse()
@@ -34,6 +35,15 @@ public class WebApiResponse<T>
         Page = page;
         PageSize = pageSize;
         TotalPages = totalPages;
+    }
+
+    public WebApiResponse(bool success, string message, T? data, int total, string? nextCursor)
+    {
+        Success = success;
+        Message = message;
+        Data = data;
+        Total = total;
+        NextCursor = nextCursor;
     }
 
     public static WebApiResponse<T> Ok()
@@ -63,6 +73,9 @@ public class WebApiResponse<T>
 
     public static WebApiResponse<T> Ok(T? data, int total, int page, int pageSize, int totalPages) =>
         new WebApiResponse<T>(true, "Success", data, total, page, pageSize, totalPages);
+
+    public static WebApiResponse<T> Ok(T? data, int total, string? nextCursor) =>
+        new WebApiResponse<T>(true, "Success", data, total, nextCursor);
 
     public static WebApiResponse<T> Fail(string message) =>
         new WebApiResponse<T>(false, message, default, 0);

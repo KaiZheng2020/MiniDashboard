@@ -21,7 +21,7 @@ public class ItemService : IItemService
         try
         {
             var items = await _repository.GetAllAsync();
-            return items.Select(MapToDto).ToList();
+            return items.Select(item => MapToDto(item, null)).ToList();
         }
         catch (Exception ex)
         {
@@ -30,16 +30,27 @@ public class ItemService : IItemService
         }
     }
 
+    public async Task<(List<ItemDto> Items, string nextCursor)> GetAllPagedAsync(string encodedCursor, int pageSize)
+    {
+        try
+        {
+            var (items, nextCursor) = await _repository.GetAllPagedAsync(encodedCursor, pageSize);
+            var itemDtos = items.Select(item => MapToDto(item, nextCursor)).ToList();
+            return (itemDtos, nextCursor);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving paged items with cursor. Cursor: {Cursor}, PageSize: {PageSize}", encodedCursor, pageSize);
+            throw;
+        }
+    }
+
     public async Task<(List<ItemDto> Items, int TotalCount)> GetAllPagedAsync(int page, int pageSize)
     {
         try
         {
-            if (page < 1) page = 1;
-            if (pageSize < 1) pageSize = 10;
-            if (pageSize > 100) pageSize = 100; // Limit max page size
-
             var (items, totalCount) = await _repository.GetAllPagedAsync(page, pageSize);
-            return (items.Select(MapToDto).ToList(), totalCount);
+            return (items.Select(item => MapToDto(item, null)).ToList(), totalCount);
         }
         catch (Exception ex)
         {
@@ -53,7 +64,7 @@ public class ItemService : IItemService
         try
         {
             var item = await _repository.GetByIdAsync(id);
-            return item == null ? null : MapToDto(item);
+            return item == null ? null : MapToDto(item, null);
         }
         catch (Exception ex)
         {
@@ -72,7 +83,7 @@ public class ItemService : IItemService
             }
 
             var items = await _repository.SearchAsync(query);
-            return items.Select(MapToDto).ToList();
+            return items.Select(item => MapToDto(item, null)).ToList();
         }
         catch (Exception ex)
         {
@@ -90,7 +101,7 @@ public class ItemService : IItemService
             if (pageSize > 100) pageSize = 100; // Limit max page size
 
             var (items, totalCount) = await _repository.SearchPagedAsync(query, page, pageSize);
-            return (items.Select(MapToDto).ToList(), totalCount);
+            return (items.Select(item => MapToDto(item, null)).ToList(), totalCount);
         }
         catch (Exception ex)
         {
@@ -115,7 +126,7 @@ public class ItemService : IItemService
             };
 
             var createdItem = await _repository.AddAsync(item);
-            return MapToDto(createdItem);
+            return MapToDto(createdItem, null);
         }
         catch (Exception ex)
         {
@@ -143,7 +154,7 @@ public class ItemService : IItemService
             item.Description = request.Description;
 
             await _repository.UpdateAsync(item);
-            return MapToDto(item);
+            return MapToDto(item, null);
         }
         catch (KeyNotFoundException)
         {
@@ -179,7 +190,7 @@ public class ItemService : IItemService
         }
     }
 
-    private static ItemDto MapToDto(Item item)
+    private static ItemDto MapToDto(Item item, string? nextCursor = null)
     {
         return new ItemDto
         {
@@ -187,7 +198,8 @@ public class ItemService : IItemService
             Name = item.Name,
             Description = item.Description,
             CreatedAt = item.CreatedAt,
-            UpdatedAt = item.UpdatedAt
+            UpdatedAt = item.UpdatedAt,
+            NextCursor = nextCursor
         };
     }
 }

@@ -19,14 +19,54 @@ public class ItemRepository : IItemRepository
             .ToListAsync();
     }
 
+    public async Task<(List<Item> Items, string nextCursor)> GetAllPagedAsync(string encodedCursor, int pageSize)
+    {
+        var query = _context.Items
+            .OrderBy(i => i.Id);
+
+        // If cursor is empty, start from the first page
+        if (string.IsNullOrWhiteSpace(encodedCursor))
+        {
+            var items = await query
+                .Take(pageSize)
+                .ToListAsync();
+
+            string nextCursor = items.Count == pageSize
+                ? items.Last().Id.ToString()
+                : string.Empty;
+
+            return (items, nextCursor);
+        }
+
+        // Parse cursor and get the next page
+        if (!int.TryParse(encodedCursor, out int lastId))
+        {
+            throw new ArgumentException("Invalid cursor format", nameof(encodedCursor));
+        }
+
+        var pagedItems = await query
+            .Where(i => i.Id > lastId)
+            .Take(pageSize)
+            .ToListAsync();
+
+        string nextCursorValue = pagedItems.Count == pageSize
+            ? pagedItems.Last().Id.ToString()
+            : string.Empty;
+
+        return (pagedItems, nextCursorValue);
+    }
+
     public async Task<(List<Item> Items, int TotalCount)> GetAllPagedAsync(int page, int pageSize)
     {
-        var query = _context.Items.OrderBy(i => i.Name);
-        var totalCount = await query.CountAsync();
-        var items = await query
+        var baseQuery = _context.Items
+            .OrderBy(i => i.Name);
+
+        var totalCount = await baseQuery.CountAsync();
+        var items = await baseQuery
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+
         return (items, totalCount);
     }
 

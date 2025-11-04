@@ -5,6 +5,7 @@ namespace MiniDashboard.Api.Repository;
 public interface IItemRepository
 {
     Task<List<Item>> GetAllAsync();
+    Task<(List<Item> Items, string nextCursor)> GetAllPagedAsync(string encodedCursor, int pageSize);
     Task<(List<Item> Items, int TotalCount)> GetAllPagedAsync(int page, int pageSize);
     Task<Item?> GetByIdAsync(int id);
     Task<List<Item>> SearchAsync(string query);

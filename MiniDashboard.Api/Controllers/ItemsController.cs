@@ -1,6 +1,5 @@
 using MiniDashboard.Models.Common;
 using MiniDashboard.Models.DTOs;
-using PagedResponse = MiniDashboard.Models.Common.PagedResponse<MiniDashboard.Models.DTOs.ItemDto>;
 using MiniDashboard.Api.Service;
 using Microsoft.AspNetCore.Mvc;
 
@@ -56,6 +55,37 @@ public class ItemsController : ControllerBase
     }
 
     /// <summary>
+    /// Get all items with cursor-based pagination (optimized for large datasets)
+    /// </summary>
+    [HttpGet("cursor")]
+    [ProducesResponseType(typeof(WebApiResponse<List<ItemDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<WebApiResponse<List<ItemDto>>>> GetAllItemsWithCursor([FromQuery] string? cursor = null, [FromQuery] int pageSize = 20)
+    {
+        _logger.LogInformation("GET /api/items/cursor - Request received to get items with cursor. Cursor: {Cursor}, PageSize: {PageSize}", cursor, pageSize);
+        try
+        {
+            // Normalize pageSize
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100; // Limit max page size
+
+            var (items, nextCursor) = await _itemService.GetAllPagedAsync(cursor ?? string.Empty, pageSize);
+            _logger.LogInformation("GET /api/items/cursor - Successfully retrieved {Count} items. NextCursor: {NextCursor}", 
+                items.Count, nextCursor ?? "null");
+            return Ok(WebApiResponse<List<ItemDto>>.Ok(items, items.Count, nextCursor));
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning("GET /api/items/cursor - Bad request: {ErrorMessage}", ex.Message);
+            return BadRequest(WebApiResponse<List<ItemDto>>.Fail(ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GET /api/items/cursor - Error retrieving items: {ErrorMessage}", ex.Message);
+            return StatusCode(500, WebApiResponse<List<ItemDto>>.Fail("Internal server error"));
+        }
+    }
+
+    /// <summary>
     /// Get item by ID
     /// </summary>
     [HttpGet("{id}")]
@@ -92,7 +122,7 @@ public class ItemsController : ControllerBase
         _logger.LogInformation("GET /api/items/search?query={Query} - Request received to search items. Page: {Page}, PageSize: {PageSize}", query, page, pageSize);
         try
         {
-            if (page.HasValue && pageSize.HasValue && page > 0 && pageSize > 0)
+            if (page.HasValue && pageSize.HasValue)
             {
                 // Normalize page and pageSize
                 var normalizedPage = page.Value < 1 ? 1 : page.Value;
@@ -173,7 +203,7 @@ public class ItemsController : ControllerBase
                 return BadRequest(WebApiResponse<ItemDto>.Fail("Invalid request data"));
             }
 
-            var item = await _itemService.UpdateAsync(id, request);
+            var item = await _itemService.UpdateAsync(id, request!);
             _logger.LogInformation("PUT /api/items/{ItemId} - Successfully updated item. Name: {ItemName}", 
                 id, item.Name);
             return Ok(WebApiResponse<ItemDto>.Ok(item));
